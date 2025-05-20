@@ -1,15 +1,17 @@
 from flask import Flask, request
-import mysql.connector
 import telegram
-from telegram import Update
-import asyncio
+import mysql.connector
 import config
 
 app = Flask(__name__)
 bot = telegram.Bot(token=config.BOT_TOKEN)
 
-async def handle_message(update: Update):
-    msg = update.message.text.strip()
+@app.route(f'/{config.BOT_TOKEN}', methods=['POST'])
+def respond():
+    update = telegram.Update.de_json(request.get_json(force=True), bot)
+    chat_id = update.message.chat.id
+    user_message = update.message.text.strip()
+
     try:
         conn = mysql.connector.connect(
             host=config.DB_HOST,
@@ -18,35 +20,30 @@ async def handle_message(update: Update):
             database=config.DB_NAME
         )
         cursor = conn.cursor(dictionary=True)
-        cursor.execute("SELECT username, credit, expiration FROM rm_users WHERE username = %s", (msg,))
-        row = cursor.fetchone()
-        if row:
-            reply = f"""📄 *بيانات الحساب:*\n👤 المستخدم: `{row['username']}`\n💳 الرصيد: `{row['credit']}`\n📅 الانتهاء: `{row['expiration']}`"""
+        query = "SELECT username, password, expiration FROM rm_users WHERE username = %s"
+        cursor.execute(query, (user_message,))
+        user = cursor.fetchone()
+
+        if user:
+            msg = (
+                f"👤 اسم المستخدم: {user['username']}\n"
+                f"🔑 كلمة المرور: {user['password']}\n"
+                f"📅 تاريخ الانتهاء: {user['expiration']}"
+            )
         else:
-            reply = "❌ الحساب غير موجود، تحقق من الرقم."
-        await bot.send_message(chat_id=update.message.chat.id, text=reply, parse_mode='Markdown')
+            msg = "لم يتم العثور على الحساب. تأكد من إدخال اسم المستخدم بشكل صحيح."
     except Exception as e:
-        await bot.send_message(chat_id=update.message.chat.id, text="حدث خطأ أثناء الاستعلام.")
-        print(e)
+        msg = f"حدث خطأ في الاتصال: {str(e)}"
     finally:
-        if conn.is_connected():
+        try:
             cursor.close()
             conn.close()
+        except:
+            pass
 
-@app.route(f"/{config.BOT_TOKEN}", methods=["POST"])
-def webhook():
-    update = telegram.Update.de_json(request.get_json(force=True), bot)
-    asyncio.run(handle_message(update))
-    return "ok"
+    bot.sendMessage(chat_id=chat_id, text=msg)
+    return 'ok'
 
-@app.route("/", methods=["GET"])
 import os
-
-port = int(os.environ.get("PORT", 5000))
-app.run(host="0.0.0.0", port=port)
-def home():
-    return "بوت Telegram Radius يعمل ✅"
-    import os
-
 port = int(os.environ.get("PORT", 5000))
 app.run(host="0.0.0.0", port=port)
