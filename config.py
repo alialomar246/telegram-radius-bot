@@ -1,0 +1,6 @@
+BOT_TOKEN = "8010087659:AAHKI0K8nC243YwIrITUv8e_QsC2_81rOfI"
+
+DB_HOST = "l188.132.203.190"
+DB_USER = "admin"
+DB_PASS = "admin"
+DB_NAME = "radius"
