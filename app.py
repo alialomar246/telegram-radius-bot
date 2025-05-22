@@ -6,7 +6,7 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-TOKEN = os.getenv("8010087659:AAHKI0K8nC243YwIrITUv8e_QsC2_81rOfI")
+TOKEN = os.getenv("7658503554:AAFyQpd6jzezqFQtPGkvXaG8tmmkV3tnIiU")
 application = Application.builder().token(TOKEN).build()
 
 def check_db_connection():
