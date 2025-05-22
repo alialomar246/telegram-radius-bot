@@ -6,11 +6,9 @@ from flask import Flask, request
 
 app = Flask(__name__)
 
-# تهيئة البوت
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("8010087659:AAHKI0K8nC243YwIrITUv8e_QsC2_81rOfI")
 application = Application.builder().token(TOKEN).build()
 
-# تحقق من الاتصال بقاعدة البيانات عند التشغيل
 def check_db_connection():
     try:
         conn = mysql.connector.connect(
@@ -26,7 +24,6 @@ def check_db_connection():
 
 check_db_connection()
 
-# أوامر البوت
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🚀 البوت يعمل بنجاح!")
 
