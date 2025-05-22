@@ -2,5 +2,5 @@ BOT_TOKEN = "8010087659:AAHKI0K8nC243YwIrITUv8e_QsC2_81rOfI"
 
 DB_HOST = "46.235.15.27"
 DB_USER = "radius"
-DB_PASS = "radius1"
+DB_PASS = "radius123"
 DB_NAME = "radius"
