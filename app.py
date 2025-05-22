@@ -1,8 +1,8 @@
 from flask import Flask, request
+from telegram import Update, Bot
+from telegram.ext import Application, MessageHandler, ContextTypes, filters
 import mysql.connector
-from telegram import Bot, Update
-from telegram.ext import Dispatcher, MessageHandler, filters
-import logging
+import asyncio
 import os
 
 TOKEN = "8010087659:AAHKI0K8nC243YwIrITUv8e_QsC2_81rOfI"
@@ -15,32 +15,30 @@ DB_PASS = "radius123"
 
 app = Flask(__name__)
 
-dispatcher = Dispatcher(bot=bot, update_queue=None)
-
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+application = Application.builder().token(TOKEN).build()
 
 def get_user_info(username):
     try:
-        connection = mysql.connector.connect(
+        conn = mysql.connector.connect(
             host=DB_HOST,
             user=DB_USER,
             password=DB_PASS,
             database=DB_NAME
         )
-        cursor = connection.cursor(dictionary=True)
+        cursor = conn.cursor(dictionary=True)
         cursor.execute("SELECT username, credit, expiration FROM rm_users WHERE username = %s", (username,))
         result = cursor.fetchone()
         cursor.close()
-        connection.close()
+        conn.close()
         return result
-    except mysql.connector.Error as err:
-        print(f"Database error: {err}")
+    except Exception as e:
+        print(f"DB error: {e}")
         return None
 
-def reply(update: Update, context):
+async def reply(update: Update, context: ContextTypes.DEFAULT_TYPE):
     tg_username = update.message.from_user.username
     if not tg_username:
-        update.message.reply_text("@Alialomar_bot")
+        await update.message.reply_text("@Alialomar_bot")
         return
 
     user = get_user_info(tg_username)
@@ -51,20 +49,22 @@ def reply(update: Update, context):
 📅 تاريخ الانتهاء: {user['expiration']}
 """
     else:
-        msg = "❌ لم يتم العثور على بيانات حسابك. تأكد من أن اسم المستخدم في تيليجرام يطابق اسم المستخدم في الشبكة."
-    update.message.reply_text(msg)
+        msg = "❌ لم يتم العثور على بيانات حسابك. تأكد من تطابق اسم المستخدم مع بيانات الشبكة."
+    await update.message.reply_text(msg)
 
-dispatcher.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
+# إضافة المعالج
+application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, reply))
 
+# ربط Webhook مع Flask
 @app.route(f"/{TOKEN}", methods=["POST"])
 def webhook():
     update = Update.de_json(request.get_json(force=True), bot)
-    dispatcher.process_update(update)
+    asyncio.run(application.process_update(update))
     return "ok"
 
 @app.route("/", methods=["GET"])
 def home():
-    return "🤖 Bot is live"
+    return "🤖 Bot is running"
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
