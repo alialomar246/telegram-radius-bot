@@ -1,38 +1,46 @@
-from flask import Flask, request
-from telegram import Update, Bot
+from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes
+import mysql.connector
 import os
-import asyncio
+from flask import Flask, request
 
-TOKEN = "8010087659:AAHKI0K8nC243YwIrITUv8e_QsC2_81rOfI"
-bot = Bot(token=TOKEN)
 app = Flask(__name__)
 
+# تهيئة البوت
+TOKEN = os.getenv("BOT_TOKEN")
 application = Application.builder().token(TOKEN).build()
 
+# تحقق من الاتصال بقاعدة البيانات عند التشغيل
+def check_db_connection():
+    try:
+        conn = mysql.connector.connect(
+            host=os.getenv("DB_HOST"),
+            user=os.getenv("DB_USER"),
+            password=os.getenv("DB_PASSWORD"),
+            database=os.getenv("DB_NAME")
+        )
+        conn.close()
+        print("✅ تم الاتصال بقاعدة البيانات بنجاح!")
+    except Exception as e:
+        print(f"❌ فشل الاتصال بقاعدة البيانات: {e}")
+
+check_db_connection()
+
+# أوامر البوت
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("مرحبًا، هذا بوت تيليجرام متصل بقاعدة Radius Manager.")
+    await update.message.reply_text("🚀 البوت يعمل بنجاح!")
 
-application.add_handler(CommandHandler("start", start))
-
-@app.route(f"/{TOKEN}", methods=["POST"])
+# ويب هوك
+@app.route('/webhook', methods=['POST'])
 def webhook():
-    update = Update.de_json(request.get_json(force=True), bot)
+    try:
+        update = Update.de_json(request.get_json(), application.bot)
+        application.run_async(application.process_update(update))
+        return "ok", 200
+    except Exception as e:
+        print(f"Error in webhook: {e}")
+        return "error", 500
 
-    async def handle_update():
-        await application.process_update(update)
-
-    asyncio.run(handle_update())
-    return "ok"
-
-@app.route(f"/{TOKEN}", methods=["GET"])
-def test():
-    return "Webhook path is active"
-
-@app.route("/", methods=["GET"])
-def index():
-    return "البوت يعمل ✅"
-
-if __name__ == "__main__":
-    port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port)
+if __name__ == '__main__':
+    application.add_handler(CommandHandler("start", start))
+    app.run(host='0.0.0.0', port=int(os.environ.get('PORT', 5000)))
