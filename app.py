@@ -1,13 +1,12 @@
-from telegram import Update
-from telegram.ext import Application, CommandHandler, ContextTypes
-import mysql.connector
 import os
+from telegram.ext import Application, CommandHandler, ContextTypes
+from telegram import Update
 from flask import Flask, request
+import mysql.connector
 
 app = Flask(__name__)
 
-# توكن البوت من متغيرات البيئة
-TOKEN = os.getenv("BOT_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")  # ← تأكد أنه مسجل في بيئة التشغيل
 application = Application.builder().token(TOKEN).build()
 
 # تحقق من الاتصال بقاعدة البيانات
@@ -26,28 +25,25 @@ def check_db_connection():
 
 check_db_connection()
 
-# أوامر البوت
+# أمر /start
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text("🚀 البوت يعمل بنجاح!")
 
 application.add_handler(CommandHandler("start", start))
 
-# نقطة استقبال التحديثات من تيليجرام (Webhook)
 @app.route('/webhook', methods=['POST'])
 def webhook():
     try:
-        update = Update.de_json(request.get_json(), application.bot)
+        update = Update.de_json(request.get_json(force=True), application.bot)
         application.run_async(application.process_update(update))
         return "ok", 200
     except Exception as e:
-        print(f"Error in webhook: {e}")
+        print(f"Webhook error: {e}")
         return "error", 500
 
-# نقطة فحص الخدمة
-@app.route('/', methods=['GET'])
+@app.route("/", methods=['GET'])
 def index():
-    return "البوت يعمل ✅"
+    return "✅ البوت يعمل"
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host="0.0.0.0", port=int(os.environ.get('PORT', 5000)))
