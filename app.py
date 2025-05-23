@@ -11,7 +11,7 @@ app = Flask(__name__)
 
 TOKEN = os.getenv("TOKEN")
 if not TOKEN:
-    raise ValueError("❌ تأكد من ضبط متغير البيئة TOKEN")
+    raise ValueError("5568994702:AAHTqFwIKRk0ka__RgEvlvDfA_BwAL0yD0c")
 
 application = Application.builder().token(TOKEN).build()
 
